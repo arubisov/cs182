@@ -24,7 +24,9 @@ def affine_forward(x, w, b):
     # TODO: Implement the affine forward pass. Store the result in out. You     #
     # will need to reshape the input into rows.                                 #
     #############################################################################
-    pass
+    # x gets reshaped to dim (N, D)
+    # (N, D) @ (D, M) + (M,) = (N, M)
+    out = x.reshape(-1, w.shape[0]) @ w + b
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -41,6 +43,7 @@ def affine_backward(dout, cache):
     - cache: Tuple of:
       - x: Input data, of shape (N, d_1, ... d_k)
       - w: Weights, of shape (D, M)
+      - b: bias, of shape (M,)
 
     Returns a tuple of:
     - dx: Gradient with respect to x, of shape (N, d1, ..., d_k)
@@ -52,7 +55,24 @@ def affine_backward(dout, cache):
     #############################################################################
     # TODO: Implement the affine backward pass.                                 #
     #############################################################################
-    pass
+    # for our dataset D = {(x_1, y_1), ..., (x_N, y_N), our loss function
+    # is defined as L(theta) = - sum_i^N log prob (y_i | x_i)
+    # where i indexes the dataset. for this reason we're just summing the gradients 
+    # across the datapoints, i.e. dim N. 
+
+    # we *should* be doing an averaging where we divide by 1/N, or in the future
+    # 1/B where B is the size of the future minibatch. this will decouple the 
+    # learning rate from the batch size, otherwise the gradient just accumulates.
+    
+    # db is the identity operation
+    db = np.sum(1 * dout, axis=0)
+
+    # dz/dw * dout = dout * a^T
+    dw = x.reshape(-1, w.shape[0]).transpose() @ dout
+    
+    # dz/da * dout = W^T * dout
+    # dim (N,D) then reshape 
+    dx = (dout @ w.transpose()).reshape(x.shape)
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -74,7 +94,7 @@ def relu_forward(x):
     #############################################################################
     # TODO: Implement the ReLU forward pass.                                    #
     #############################################################################
-    pass
+    out = np.maximum(x, 0)
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -97,7 +117,11 @@ def relu_backward(dout, cache):
     #############################################################################
     # TODO: Implement the ReLU backward pass.                                   #
     #############################################################################
-    pass
+    # there is no dtheta (like dw or db for a linear layer) since relu isn't 
+    # paramterized.
+    # here we use dx = 1 if x>=0, and 0 otherwise, and then mult with dout
+    dx = dout.copy()
+    dx[x <= 0] = 0
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -539,7 +563,8 @@ def softmax_loss(x, y):
     - loss: Scalar giving the loss
     - dx: Gradient of the loss with respect to x
     """
-    probs = np.exp(x - np.max(x, axis=1, keepdims=True))
+    probs = np.exp(x - np.max(x, axis=1, keepdims=True))    # Anton: why are we subtracting the max? seems unnecessary
+    probs = np.exp(x)                                       # Anton: why are we subtracting the max? seems unnecessary
     probs /= np.sum(probs, axis=1, keepdims=True)
     N = x.shape[0]
     loss = -np.sum(np.log(probs[np.arange(N), y])) / N
