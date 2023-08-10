@@ -66,7 +66,15 @@ def sgd_momentum(w, dw, config=None):
     # the updated value in the next_w variable. You should also use and update  #
     # the velocity v.                                                           # 
     #############################################################################
-    pass
+    # mapping from lecture:
+    # g_k   = v (velocity)
+    # alpha = learning_rate
+    # mu    = momentum
+
+    # update v inplace: from g_{k-1} to g_k
+    v = dw + config['momentum'] * v
+    w -= config['learning_rate'] * v
+    next_w = w
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -99,7 +107,20 @@ def rmsprop(x, dx, config=None):
     # in the next_x variable. Don't forget to update cache value stored in      #
     # config['cache'] and to use the epsilon scalar to avoid dividing by zero.  #
     #############################################################################
-    pass
+    # mapping from lecture:
+    # s_k   = cache (moving avg of second moments of gradients)
+    # beta  = decay_rate
+    # alpha = learning_rate
+
+    mavg = config['cache']
+    beta = config['decay_rate']
+    alpha = config['learning_rate']
+    eps = config['epsilon']
+    
+    mavg = beta * mavg + (1-beta) * dx * dx  # element-wise multiplication, not mmult
+    
+    next_x = x - alpha * dx / (np.sqrt(mavg) + eps)
+    config['cache'] = mavg
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -136,7 +157,19 @@ def adam(x, dx, config=None):
     # the next_x variable. Don't forget to update the m, v, and t variables     #
     # stored in config and to use the epsilon scalar to avoid dividing by zero. #
     #############################################################################
-    pass
+    # mapping from lecture:
+    # s_k   = cache (moving avg of second moments of gradients)
+    # beta  = decay_rate
+    # alpha = learning_rate
+    config['t'] += 1
+    
+    config['m'] = (1 - config['beta1']) * dx + config['beta1'] * config['m']
+    config['v'] = (1 - config['beta2']) * dx**2 + config['beta2'] * config['v']
+
+    m_hat = config['m'] / (1 - config['beta1']**config['t'])
+    v_hat = config['v'] / (1 - config['beta2']**config['t'])
+
+    next_x = x - config['learning_rate'] * m_hat / (np.sqrt(v_hat) + config['epsilon'])
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
