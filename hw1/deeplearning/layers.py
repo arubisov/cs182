@@ -350,7 +350,7 @@ def conv_forward_naive(x, w, b, conv_param):
 
     The input consists of N data points, each with C channels, height H and width
     W. We convolve each input with F different filters, where each filter spans
-    all C channels and has height HH and width HH.
+    all C channels and has height HH and width WW.
 
     Input:
     - x: Input data of shape (N, C, H, W)
@@ -372,7 +372,52 @@ def conv_forward_naive(x, w, b, conv_param):
     # TODO: Implement the convolutional forward pass.                           #
     # Hint: you can use the function np.pad for padding.                        #
     #############################################################################
-    pass
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+    N, C, H, W = x.shape
+    F, _, FH, FW = w.shape
+    
+    x_pad = np.pad(x, 
+                   pad_width=((0,), (0,), (pad,), (pad,)), 
+                   mode='constant', 
+                   constant_values=0)
+
+    H_out = 1 + (H + 2*pad - FH) // stride
+    W_out = 1 + (W + 2*pad - FW) // stride
+
+    out = np.zeros((N, F, H_out, W_out))
+
+    # for each image in the batch
+    for n in range(0, N):
+
+        # iterate over each position in the output
+
+        # for each filter
+        for f in range(0, F):
+            # for each h,w in the output
+            for out_h in range(0, H_out):
+                for out_w in range(0, W_out):
+                    
+
+                    # first approach.
+                    # original, hyperspecified operations. simplifying using list slicing below.
+                    # # for each h,w in the filter
+                    # val = 0
+                    # for f_h in range(0, FH):
+                    #     for f_w in range(0, FW):
+                    #         # and for each channel
+                    #         for c in range(0, C):
+                    #             # accrue the filter value applied to the moving window over the input, 
+                    #             # centered on the same position we're on in the output. god that's a bad explanation.
+                    #             val += (w[f, c, f_h, f_w]
+                    #                     * x_pad[n, c, (out_h*conv_param['stride'] + conv_param['pad'] - (w.shape[2]-1)//2 + f_h),
+                    #                                   (out_w*conv_param['stride'] + conv_param['pad'] - (w.shape[3]-1)//2 + f_w)])
+                    # out[n, f, out_h, out_w] = val + b[f]
+
+                    # second approach.
+                    # we don't need to specify every position in filter, can just use : list access with element-wise multiplication
+                    # and better specify the window in the input that's being convolved
+                    out[n, f, out_h, out_w] = np.sum(w[f, :, :, :] * x_pad[n, :, out_h*stride:out_h*stride+FH, out_w*stride:out_w*stride+FW]) + b[f]
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
