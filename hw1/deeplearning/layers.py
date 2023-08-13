@@ -375,7 +375,7 @@ def conv_forward_naive(x, w, b, conv_param):
     stride = conv_param['stride']
     pad = conv_param['pad']
     N, C, H, W = x.shape
-    F, _, FH, FW = w.shape
+    F, C, FH, FW = w.shape # same C
     
     x_pad = np.pad(x, 
                    pad_width=((0,), (0,), (pad,), (pad,)), 
@@ -393,12 +393,11 @@ def conv_forward_naive(x, w, b, conv_param):
         # iterate over each position in the output
 
         # for each filter
-        for f in range(0, F):
+        for f in range(0, F): 
             # for each h,w in the output
             for out_h in range(0, H_out):
                 for out_w in range(0, W_out):
                     
-
                     # first approach.
                     # original, hyperspecified operations. simplifying using list slicing below.
                     # # for each h,w in the filter
@@ -442,7 +441,54 @@ def conv_backward_naive(dout, cache):
     #############################################################################
     # TODO: Implement the convolutional backward pass.                          #
     #############################################################################
-    pass
+    x, w, b, conv_param = cache
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+    N, C, H, W = x.shape
+    F, C, FH, FW = w.shape # same C
+    # upstream deriv dout has shape (N, F, H_out, W_out)
+    # H_out = 1 + (H + 2*pad - FH) // stride
+    # W_out = 1 + (W + 2*pad - FW) // stride
+    _, _, H_out, W_out = dout.shape
+    
+    x_pad = np.pad(x, 
+                   pad_width=((0,), (0,), (pad,), (pad,)), 
+                   mode='constant', 
+                   constant_values=0)
+
+    # convoluations cannot be represented as matrix multiplications! so,
+    # consider one output unit z_{i,j,k} at a time.
+    # 
+    # dout = dL/dz
+    #
+    # for a single z_{i,j,k}, dz_{i,j,k}/db_k = 1
+    # so by chain rule:
+    #   dL/db_k = sum_i sum_j dL/dz_{i,j,k} * dz_{i,j,k}/db_k
+    #           = sum_i sum_j dL/dz_{i,j,k}
+    # AND we sum across the batch of training examples, so:
+    #           = sum_n sum_i sum_j dL/dz_{i,j,k}
+    db = np.sum(dout, axis=(0,2,3))
+
+    # for a single z_{i,j,k}, dz_{i,j,k}/dw_{h,w,k,c} = a_{i+h,j+w,c}
+    # so by chain rule:
+    #   dL/db_k = sum_i sum_j dL/dz_{i,j,k} * dz_{i,j,k}/db_k
+    #           = sum_i sum_j dL/dz_{i,j,k} * a_{i+h,j+w,c}
+    # AND we sum across the batch of training examples, so:
+    #           = sum_n sum_i sum_j dL/dz_{i,j,k} * a_{i+h,j+w,c}
+
+    
+    
+    dw = np.zeros(w.shape)
+    dx_pad = np.zeros(x_pad.shape)
+    for n in range(0, N):
+        for f in range(0, F): 
+            for out_h in range(0, H_out):
+                for out_w in range(0, W_out):
+                    # out[n, f, out_h, out_w] = np.sum(w[f, :, :, :] * x_pad[n, :, out_h*stride:out_h*stride+FH, out_w*stride:out_w*stride+FW]) + b[f]
+                    dw[f] += x_pad[n, :, out_h*stride:out_h*stride+FH, out_w*stride:out_w*stride+FW] * dout[n,f,out_h,out_w]
+                    dx_pad[n, :, out_h*stride:out_h*stride+FH, out_w*stride:out_w*stride+FW] += w[f] * dout[n,f,out_h,out_w]
+    
+    dx = dx_pad[:, :, pad:H+pad, pad:W+pad]
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -468,7 +514,20 @@ def max_pool_forward_naive(x, pool_param):
     #############################################################################
     # TODO: Implement the max pooling forward pass                              #
     #############################################################################
-    pass
+    N, C, H, W = x.shape
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
+    stride = pool_param['stride']
+
+    H_out = H//pool_height
+    W_out = W//pool_width
+    out = np.zeros((N, C, H_out, W_out))
+
+    for n in range(0, N):
+        for c in range(0, C):
+            for i in range(0, H_out):
+                for j in range(0, W_out):
+                    out[n,c,i,j] = np.max(x[n,c,i*stride:i*stride+pool_height, j*stride:j*stride+pool_width])
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -491,7 +550,25 @@ def max_pool_backward_naive(dout, cache):
     #############################################################################
     # TODO: Implement the max pooling backward pass                             #
     #############################################################################
-    pass
+    x, pool_param = cache
+    N, C, H, W = x.shape
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
+    stride = pool_param['stride']
+    H_out = H//pool_height
+    W_out = W//pool_width
+
+    dx = np.zeros(x.shape)
+
+    # each input pixel accumulates deriv 1 if it was the argmax in a given mask
+    for n in range(0, N):
+        for c in range(0, C):
+            for i in range(0, H_out):
+                for j in range(0, W_out):
+                    x_mask = x[n,c,i*stride:i*stride+pool_height, j*stride:j*stride+pool_width]
+                    max_pixel = np.unravel_index(np.argmax(x_mask, axis=None), x_mask.shape)
+                    
+                    dx[n,c,i*stride+max_pixel[0], j*stride+max_pixel[1]] += dout[n,c,i,j]
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
