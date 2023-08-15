@@ -189,7 +189,18 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # the momentum variable to update the running mean and running variance,    #
         # storing your result in the running_mean and running_var variables.        #
         #############################################################################
-        pass
+
+        sample_mean = 1/N * np.sum(x, axis=0) # mean per feature, across the training sample of size N
+        sample_var = 1/N * np.sum((x-sample_mean)**2, axis=0)
+
+        out = (x-sample_mean) / np.sqrt(sample_var + eps) * gamma + beta
+
+        normed = (x-sample_mean) / np.sqrt(sample_var + eps)
+
+        running_mean = momentum * running_mean + (1 - momentum) * sample_mean
+        running_var = momentum * running_var + (1 - momentum) * sample_var    
+
+        cache = (sample_mean, sample_var, normed, x, gamma, eps)
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
@@ -200,7 +211,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # and shift the normalized data using gamma and beta. Store the result in   #
         # the out variable.                                                         #
         #############################################################################
-        pass
+        out = (x-running_mean) / np.sqrt(running_var + eps) * gamma + beta 
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
@@ -236,12 +247,80 @@ def batchnorm_backward(dout, cache):
     # TODO: Implement the backward pass for batch normalization. Store the      #
     # results in the dx, dgamma, and dbeta variables.                           #
     #############################################################################
-    pass
+    mu, var, normed, x, gamma, eps = cache
+    N, D = dout.shape
+    
+    # work backward at each operation gate.
+
+    # start with dout
+    dy = dout
+    
+    # + gate: y = xhat * gamma + beta, outputs dbeta and dxhatgamma
+    # dbeta = 1
+    dbeta = np.sum(dout, axis=0)
+    dxhatgamma = dout
+
+    # * gate: xhatgamma = xhat * gamma, outputs dgamma and dxhat
+    # note that xhat and the normed variable are the same thing
+    dgamma = np.sum(dxhatgamma * normed, axis=0)
+    dxhat = dxhatgamma * gamma
+
+    # div gate: xhat = (x-mu) / sqrt(var)
+    # dy/dsigma = dy/dxhat dxhat/dsigma
+    # dy/d(x-mu) = dy/dxhat dxhat/d(x-mu) first branch only
+    # dim D
+    dsigma = np.sum(dxhat * -(x-mu) / var, axis=0)
+    # dim (N,D)
+    dxminusmu_xhat = dxhat * 1/np.sqrt(var)
+
+    # sqrt gate: sigma = sqrt(var)
+    # dim D
+    dvar = dsigma * 1/2 * var**(-1/2)
+
+    # mult 1/N gate: var = 1/N * SUM(x-mu)^2
+    # dim D
+    dvarunscaled = dvar * 1/N
+
+    # SUM gate: varunscaled = SUM(x-mu)^2
+    # dim (N,D)
+    dxminusmusqd = dvarunscaled * np.ones(x.shape) 
+
+    # ^2 gate: xminusmusqd = (x-mu)^2
+    # dy/d(x-mu) = dy/(x-mu)^2 d(x-mu)^2/d(x-mu) second branch only
+    # dim (N,D)
+    dxminusmu_xminusmusqd = dxminusmusqd * 2 * (x-mu)
+
+    # dy/d(x-mu) = dy/dxhat dxhat/d(x-mu) + dy/(x-mu)^2 d(x-mu)^2/d(x-mu)
+    # output used in two branches, so sum the branches 
+    # together per calculus sum rule
+    # dim (N,D)
+    dxminusmu = dxminusmu_xhat + dxminusmu_xminusmusqd
+
+    # - gate: x-mu = x-mu. 
+    # dy/mu = dy/(x-mu) d(x-mu)/dmu
+    # dim D
+    # dy/dx = dy/(x-mu) d(x-mu)/dx first branch only
+    dmu = np.sum(-dxminusmu, axis=0)
+    dx_xminusmu = dxminusmu
+    
+    # mult 1/N gate
+    # mu = 1/N * SUM(x)
+    # dy/dmu = dy/d(x-mu) d(x-mu)/dmu
+    # dim D
+    dsumx = dmu * 1/N
+
+    # SUM gate
+    # dy/dx = dy/dsumx dsumx/dx second branch only 
+    # dim (N,D)
+    dx_sum = dsumx * np.ones(x.shape)
+
+    # dim (N,D)
+    dx = dx_xminusmu + dx_sum
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
 
-    return dx, dgamma, dbeta
+    return dx, dgamma, dbeta, dmu
 
 
 def batchnorm_backward_alt(dout, cache):
@@ -266,12 +345,36 @@ def batchnorm_backward_alt(dout, cache):
     # should be able to compute gradients with respect to the inputs in a       #
     # single statement; our implementation fits on a single 80-character line.  #
     #############################################################################
-    pass
+    mu, var, normed, x, gamma, eps = cache
+    N, D = dout.shape
+    
+    # dz/db_i = 1
+    dbeta = np.sum(dout, axis=0)
+
+    # dz/dgamma is the normalized unscaled input, retrieve it from cache of forward step
+    dgamma = np.sum(normed * dout, axis=0)
+
+    # dz/dx is complex... work backbward, following ideas here:
+    # https://www.adityaagrawal.net/blog/deep_learning/bprop_batch_norm
+    dx = np.zeros(dout.shape)
+    dxhat = dout * gamma # (N,D)
+    dvar = np.sum(dxhat * (x - mu) * (-1/2) * (var + eps) ** (-3/2), axis=0)
+    dmu = np.sum(dxhat * (-1/np.sqrt(var + eps)), axis=0)
+    
+    # validating for first position only to ensure issue isn't here...
+    # val = dxhat[0,0] * 1/np.sqrt(var[0]+eps) + dvar[0] * 2*(x[0,0]-mu[0]) / N + dmu[0] * 1/N
+    # dx[0,0] = val
+    
+    dx = (dxhat * 1/np.sqrt(var + eps)
+          + dvar * 2 * (x - mu) / N
+          + dmu * 1/N
+         )
+    
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
 
-    return dx, dgamma, dbeta
+    return dx, dgamma, dbeta, dmu
 
 
 def dropout_forward(x, dropout_param):
