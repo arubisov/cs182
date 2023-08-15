@@ -374,7 +374,7 @@ def batchnorm_backward_alt(dout, cache):
     #                             END OF YOUR CODE                              #
     #############################################################################
 
-    return dx, dgamma, dbeta, dmu
+    return dx, dgamma, dbeta
 
 
 def dropout_forward(x, dropout_param):
@@ -409,7 +409,8 @@ def dropout_forward(x, dropout_param):
         # TODO: Implement the training phase forward pass for inverted dropout.   #
         # Store the dropout mask in the mask variable.                            #
         ###########################################################################
-        pass
+        mask = (np.random.rand(*x.shape) > p) / p
+        out = x * mask
         ###########################################################################
         #                            END OF YOUR CODE                             #
         ###########################################################################
@@ -438,7 +439,7 @@ def dropout_backward(dout, cache):
         ###########################################################################
         # TODO: Implement the training phase backward pass for inverted dropout.  #
         ###########################################################################
-        pass
+        dx = dout * mask
         ###########################################################################
         #                            END OF YOUR CODE                             #
         ###########################################################################
@@ -788,8 +789,7 @@ def softmax_loss(x, y):
     - loss: Scalar giving the loss
     - dx: Gradient of the loss with respect to x
     """
-    probs = np.exp(x - np.max(x, axis=1, keepdims=True))    # Anton: why are we subtracting the max? seems unnecessary
-    probs = np.exp(x)                                       # Anton: why are we subtracting the max? seems unnecessary
+    probs = np.exp(x - np.max(x, axis=1, keepdims=True))    # Anton: why are we subtracting the max? seems unnecessary, math works out same. avoids degradation?
     probs /= np.sum(probs, axis=1, keepdims=True)
     N = x.shape[0]
     loss = -np.sum(np.log(probs[np.arange(N), y])) / N
