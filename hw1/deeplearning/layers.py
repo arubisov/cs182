@@ -320,7 +320,7 @@ def batchnorm_backward(dout, cache):
     #                             END OF YOUR CODE                              #
     #############################################################################
 
-    return dx, dgamma, dbeta, dmu
+    return dx, dgamma, dbeta
 
 
 def batchnorm_backward_alt(dout, cache):
@@ -710,7 +710,18 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     # version of batch normalization defined above. Your implementation should  #
     # be very short; ours is less than five lines.                              #
     #############################################################################
-    pass
+    N, C, H, W = x.shape
+    # np.transpose gets me every time.
+    # output i corresponds to axes[i]
+    # TRANSPOSE+RESHAPE ORDER MATTERS! must be to (N, W, H, C)
+    # can inspect visually by comparing 
+    #     x.transpose(0,3,2,1).reshape(N*W*H, C)
+    # and x.transpose(0,3,1,2).reshape(N*H*W, C)
+    # and seeing that only the former plucks out the indices correctly. 
+    # would love a compelling answer...
+    x = x.transpose(0,3,2,1).reshape(N*W*H, C)
+    out, cache = batchnorm_forward(x, gamma, beta, bn_param)
+    out = out.reshape(N, W, H, C).transpose(0,3,2,1)
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -740,7 +751,11 @@ def spatial_batchnorm_backward(dout, cache):
     # version of batch normalization defined above. Your implementation should  #
     # be very short; ours is less than five lines.                              #
     #############################################################################
-    pass
+    N, C, H, W = dout.shape
+    # TRANSPOSE+RESHAPE ORDER MATTERS! must be to (N, W, H, C)
+    dx = dout.transpose(0,3,2,1).reshape(N*W*H, C)
+    dx, dgamma, dbeta = batchnorm_backward_alt(dx, cache)
+    dx = dx.reshape(N, W, H, C).transpose(0,3,2,1)
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
