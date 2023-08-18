@@ -26,3 +26,10 @@ Time spent: 20 hours.
   - [How computational graphs help with the calculus of backprop](http://colah.github.io/posts/2015-08-Backprop/)
   - [Backprop for the convolution and max-pool layers](https://mukulrathi.com/demystifying-deep-learning/conv-net-backpropagation-maths-intuition-derivation/)
   - [Backprop calculus for the batch norm](https://www.adityaagrawal.net/blog/deep_learning/bprop_batch_norm)
+
+## Homework 2
+Spring 2021 version not found, so this is forked from the [Spring 2022 version](https://github.com/cs182sp22/cs182_hw2_student). 
+
+Time spent: N hours.
+
+- Includes Intro to PyTorch notebook from the [Spring 2022 version of Homework 1](https://github.com/cs182sp22/cs182_hw1_student/blob/main/Pytorch.ipynb)
