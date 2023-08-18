@@ -1,0 +1,16 @@
+name: cs182_hw2
+channels:
+    - https://conda.anaconda.org/pytorch
+dependencies:
+    - python=3.7
+    - pip=20.3.3
+    - numpy=1.19.2
+    - scipy=1.5.2
+    - h5py=2.10.0
+    - matplotlib=3.3.2
+    - jupyter=1.0.0
+    - pytorch=1.7.1
+    - cpuonly=1.0
+    - torchvision=0.8.2
+    - scikit-image=0.17.2
+    - nltk=3.5

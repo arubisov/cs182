@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+.DS_Store
+
+assignment2.zip
+
+/deeplearning/datasets/coco_captioning/
+/deeplearning/datasets/imagenet_val_25.npz
+/deeplearning/datasets/squeezenet.ckpt*
