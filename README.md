@@ -5,6 +5,7 @@ Self-study of CS182 (Spring 2021) at UC Berkeley - Designing, Visualizing and Un
 I began self-study on this course on 2023-08-02 thanks to a comment in [this Reddit discussion](https://www.reddit.com/r/deeplearning/comments/tsybv1/deep_learning_specialization_courses/) which described the course as "simply amazing." I agree.
 
 ## Homework 1
+Lectures 1-7.  
 Time spent: 20 hours.
 
 - Implements a fully-connected neural network with arbitrarily many affine+ReLU hidden layers
@@ -28,8 +29,8 @@ Time spent: 20 hours.
   - [Backprop calculus for the batch norm](https://www.adityaagrawal.net/blog/deep_learning/bprop_batch_norm)
 
 ## Homework 2
-Spring 2021 version not found, so this is forked from the [Spring 2022 version](https://github.com/cs182sp22/cs182_hw2_student). 
-
+Lectures 8-10.  
+Spring 2021 version not found, so this homework is forked from the [Spring 2022 version](https://github.com/cs182sp22/cs182_hw2_student).  
 Time spent: N hours.
 
 - Includes Intro to PyTorch notebook from the [Spring 2022 version of Homework 1](https://github.com/cs182sp22/cs182_hw1_student/blob/main/Pytorch.ipynb)
