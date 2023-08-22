@@ -9,13 +9,12 @@ Style Transfer. The goals of this assignment are as follows:
 - Understand how to sample from an RNN language model at test-time
 - Understand how to combine convolutional neural nets and recurrent nets to implement an image captioning system
 - Understand how a trained convolutional network can be used to compute gradients with respect to the input image
-- Implement and different applications of image gradients, including saliency maps, fooling images, class visualizations.
+- Implement different applications of image gradients, including saliency maps, fooling images, class visualizations.
 - Understand and implement style transfer.
 
 
 ## Copy Solution from Homework 1
-Please copy `layers.py` and `optim.py` from your homework 1 solution to the deeplearning directory. We will provide
-reference files once the deadline of homework 1 is over.
+Please copy `layers.py` and `optim.py` from your homework 1 solution to the deeplearning directory. We will provide reference files once the deadline of homework 1 is over.
 
 ## Setup
 Make sure your machine is set up with the assignment dependencies.
