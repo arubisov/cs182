@@ -96,7 +96,7 @@ def rnn_forward(x, h0, Wx, Wh, b):
     - h: Hidden states for the entire timeseries, of shape (N, T, H).
     - cache: Values needed in the backward pass
     """
-    h, cache = None, None
+    h, caches = None, None
     ##############################################################################
     # TODO: Implement forward pass for a vanilla RNN running on a sequence of    #
     # input data. You should use the rnn_step_forward function that you defined  #
@@ -106,16 +106,18 @@ def rnn_forward(x, h0, Wx, Wh, b):
     _, H = h0.shape
     x0 = np.zeros(x.shape)
     h = np.zeros((N, T, H))
+    caches = []
 
     for t in range(T):
         if t == 0:
             next_h = h0
         next_h, cache = rnn_step_forward(x[:,t,:], next_h, Wx, Wh, b)
         h[:, t, :] = next_h
+        caches.append(cache)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
-    return h, cache
+    return h, caches
 
 
 def rnn_backward(dh, cache):
@@ -138,7 +140,29 @@ def rnn_backward(dh, cache):
     # sequence of data. You should use the rnn_step_backward function that you   #
     # defined above. You can use a for loop to help compute the backward pass.   #
     ##############################################################################
-    pass
+    N, T, H = dh.shape
+    _, D = cache[0][1].shape
+
+    dx = np.zeros((N,T,D))
+    dh0 = np.zeros((N,H))
+    dWx = np.zeros((D,H))
+    dWh = np.zeros((H,H))
+    db = np.zeros((H,))
+
+    dh_t = np.zeros((N,H))
+
+    for t in reversed(range(T)):
+        # dh (input) is the gradient of the individual losses
+        # each layer has 2 computational descendants because total loss is sum of individual losses
+        # therefore, sum rule, sum the two partial derivatives: individual, plus that flowing from next_h
+        dnext_h = dh_t + dh[:,t,:]
+        dx_t, dh_t, dWx_t, dWh_t, db_t = rnn_step_backward(dnext_h, cache[t])
+        dx[:,t,:] = dx_t
+        dWx += dWx_t
+        dWh += dWh_t
+        db += db_t
+    dh0 = dh_t
+    
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -153,7 +177,7 @@ def word_embedding_forward(x, W):
 
     Inputs:
     - x: Integer array of shape (N, T) giving indices of words. Each element idx
-      of x muxt be in the range 0 <= idx < V.
+      of x must be in the range 0 <= idx < V.
     - W: Weight matrix of shape (V, D) giving word vectors for all words.
 
     Returns a tuple of:
@@ -166,7 +190,9 @@ def word_embedding_forward(x, W):
     #                                                                            #
     # HINT: This can be done in one line using NumPy's array indexing.           #
     ##############################################################################
-    pass
+    # this uses https://numpy.org/doc/stable/user/basics.indexing.html#advanced-indexing
+    out = W[x]
+    cache = (x, W)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -195,7 +221,16 @@ def word_embedding_backward(dout, cache):
     # Note that Words can appear more than once in a sequence.                   #
     # HINT: Look up the function np.add.at                                       #
     ##############################################################################
-    pass
+    x, W = cache
+
+    dW = np.zeros(W.shape)
+    # index into dW at positions x, and add dout. 
+    # see https://numpy.org/doc/stable/reference/generated/numpy.ufunc.at.html
+    # this method is equivalent to a[indices] += b, except that results are accumulated for elements that are indexed more than once
+    # dW[x] expands from (V,D) to a (N,T,D) matrix, keeps track of underlying indices, adds dout to each of those, and then collapses
+    # back to (V,D) by summing up for across the V indices and across N.
+    # this is definitely some sort of numpy magic.
+    np.add.at(dW, x, dout)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################

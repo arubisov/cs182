@@ -11,7 +11,7 @@ class CaptioningSolver(object):
     image captioning models. The CaptioningSolver performs stochastic gradient
     descent using different update rules defined in optim.py.
 
-    The solver accepts both training and validataion data and labels so it can
+    The solver accepts both training and validation data and labels so it can
     periodically check classification accuracy on both training and validation
     data to watch out for overfitting.
 
@@ -52,7 +52,7 @@ class CaptioningSolver(object):
       training-time loss and gradients, with the following inputs and outputs:
 
       Inputs:
-      - features: Array giving a minibatch of features for images, of shape (N, D
+      - features: Array giving a minibatch of features for images, of shape (N, D)
       - captions: Array of captions for those images, of shape (N, T) where
         each element is in the range (0, V].
 
