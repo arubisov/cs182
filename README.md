@@ -31,9 +31,13 @@ Time spent: 20 hours.
 ## Homework 2
 Lectures 8-10.  
 Spring 2021 version not found, so this homework is forked from the [Spring 2022 version](https://github.com/cs182sp22/cs182_hw2_student).  
-Time spent: 4 hours.
+Time spent: 10 hours.
 
-- Includes Intro to PyTorch notebook from the [Spring 2022 version of Homework 1](https://github.com/cs182sp22/cs182_hw1_student/blob/main/Pytorch.ipynb)
-
+- Implements forward propagation and back propagations for:
+  - vanilla RNN step
+  - vanilla RNN pass through entire sequence
+  - LSTM single step
+  - word embedding
+- Completed Intro to PyTorch notebook from the [Spring 2022 version of Homework 1](https://github.com/cs182sp22/cs182_hw1_student/blob/main/Pytorch.ipynb)
 - Additional resources:
   - [Math for RNNs](https://www.oreilly.com/library/view/neural-networks-and/9781492037354/ch04.html) helped understand that the previous layer gets summed, not concatenated
