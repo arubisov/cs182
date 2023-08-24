@@ -276,7 +276,31 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
     # TODO: Implement the forward pass for a single timestep of an LSTM.        #
     # You may want to use the numerically stable sigmoid implementation above.  #
     #############################################################################
-    pass
+    N, H = prev_h.shape
+    
+    # compute a = [a_i, a_f, a_o, a_g]
+    # A = X_t W_x + H_{t-1} Wh + b
+    A = x.dot(Wx) + prev_h.dot(Wh) + b
+
+    # split up the dim 4H output
+    A_i = A[:, 0:H]
+    A_f = A[:, H:2*H]
+    A_o = A[:, 2*H:3*H]
+    A_g = A[:, 3*H:4*H]
+
+    i = sigmoid(A_i)
+    f = sigmoid(A_f)
+    o = sigmoid(A_o)
+    g = np.tanh(A_g)
+
+    # next cell state c
+    next_c = f * prev_c + i * g
+
+    # next hidden state
+    next_h = o * np.tanh(next_c)
+
+    cache = x, prev_h, prev_c, Wx, Wh, b, i, f, o, g, next_c, next_h
+    
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -301,14 +325,46 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
     - dWh: Gradient of hidden-to-hidden weights, of shape (H, 4H)
     - db: Gradient of biases, of shape (4H,)
     """
-    dx, dh, dc, dWx, dWh, db = None, None, None, None, None, None
+    dx, dprev_h, dprev_c, dWx, dWh, db = None, None, None, None, None, None
     #############################################################################
     # TODO: Implement the backward pass for a single timestep of an LSTM.       #
     #                                                                           #
     # HINT: For sigmoid and tanh you can compute local derivatives in terms of  #
     # the output value from the nonlinearity.                                   #
     #############################################################################
-    pass
+
+    x, prev_h, prev_c, Wx, Wh, b, i, f, o, g, next_c, next_h = cache
+    
+    # so, not even going to attempt this analytically - let's compute using backprop across the computational graph.
+
+    # next_c gets derivative direct and through next_h
+    # deriv of tanh(x) is 1-tanh^2(x)
+    do = np.tanh(next_c) * dnext_h
+    dnext_c_2 = o * (1 - np.tanh(next_c)**2) * dnext_h
+    dnext_c += dnext_c_2
+    
+    dprev_c = f * dnext_c
+    df = prev_c * dnext_c
+
+    di = g * dnext_c
+    dg = i * dnext_c
+
+    # deriv of sigmoid(x) is sigmoid(x) * (1 - sigmoid(x))
+    dA_f = f * (1-f) * df
+    dA_i = i * (1-i) * di
+    dA_o = o * (1-o) * do
+    dA_g = (1 - g**2) * dg
+
+    # concat back in same order as split
+    dA = np.concatenate((dA_i, dA_f, dA_o, dA_g), axis=1)
+
+    # A = X_t W_x + H_{t-1} Wh + b
+    dWx = x.T.dot(dA) 
+    dx = dA.dot(Wx.T)
+    dWh = prev_h.T.dot(dA)
+    dprev_h = dA.dot(Wh.T)
+    db = dA.sum(axis=0)
+    
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
