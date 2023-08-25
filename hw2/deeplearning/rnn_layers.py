@@ -104,7 +104,6 @@ def rnn_forward(x, h0, Wx, Wh, b):
     ##############################################################################
     N, T, D = x.shape
     _, H = h0.shape
-    x0 = np.zeros(x.shape)
     h = np.zeros((N, T, H))
     caches = []
 
@@ -335,7 +334,8 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
 
     x, prev_h, prev_c, Wx, Wh, b, i, f, o, g, next_c, next_h = cache
     
-    # so, not even going to attempt this analytically - let's compute using backprop across the computational graph.
+    # so, not even going to attempt this analytically - let's compute using backprop across
+    # the computational graph shown in the lecture slide.
 
     # next_c gets derivative direct and through next_h
     # deriv of tanh(x) is 1-tanh^2(x)
@@ -394,22 +394,37 @@ def lstm_forward(x, h0, Wx, Wh, b):
     - h: Hidden states for all timesteps of all sequences, of shape (N, T, H)
     - cache: Values needed for the backward pass.
     """
-    h, cache = None, None
+    h, caches = None, None
     #############################################################################
     # TODO: Implement the forward pass for an LSTM over an entire timeseries.   #
     # You should use the lstm_step_forward function that you just defined.      #
     #############################################################################
-    pass
+
+    N, T, D = x.shape
+    _, H = h0.shape
+    c0 = np.zeros((N, H))
+    h = np.zeros((N, T, H))
+    caches = []
+
+    for t in range(T):
+        if t == 0:
+            next_c = c0
+            next_h = h0
+        # next_h, cache = rnn_step_forward(x[:,t,:], next_h, Wx, Wh, b)
+        next_h, next_c, cache = lstm_step_forward(x[:,t,:], next_h, next_c, Wx, Wh, b)
+        h[:, t, :] = next_h
+        caches.append(cache)
+    
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
 
-    return h, cache
+    return h, caches
 
 
 def lstm_backward(dh, cache):
     """
-    Backward pass for an LSTM over an entire sequence of data.]
+    Backward pass for an LSTM over an entire sequence of data.
 
     Inputs:
     - dh: Upstream gradients of hidden states, of shape (N, T, H)
@@ -427,7 +442,34 @@ def lstm_backward(dh, cache):
     # TODO: Implement the backward pass for an LSTM over an entire timeseries.  #
     # You should use the lstm_step_backward function that you just defined.     #
     #############################################################################
-    pass
+
+    N, T, H = dh.shape
+    # pluck first x to get shape
+    _, D = cache[0][0].shape
+
+    dx  = np.zeros((N,T,D))
+    dh0 = np.zeros((N,H))
+    dWx = np.zeros((D,4*H))
+    dWh = np.zeros((H,4*H))
+    db  = np.zeros((4*H,))
+
+    dh_t = np.zeros((N,H))
+
+    # initial dc is zero - Loss does not depend on c
+    dc_t = np.zeros((N,H))
+
+    for t in reversed(range(T)):
+        # just like as in vanilla RNN, dh (input) is the gradient of the individual losses
+        # each layer has 2 computational descendants because total loss is sum of individual losses
+        # therefore, sum rule, sum the two partial derivatives: individual, plus that flowing from next_h
+        dnext_h = dh_t + dh[:,t,:]
+        dx_t, dh_t, dc_t, dWx_t, dWh_t, db_t = lstm_step_backward(dnext_h, dc_t, cache[t])
+        dx[:,t,:] = dx_t
+        dWx += dWx_t
+        dWh += dWh_t
+        db += db_t
+    dh0 = dh_t
+    
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
