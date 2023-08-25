@@ -34,10 +34,11 @@ Spring 2021 version not found, so this homework is forked from the [Spring 2022 
 Time spent: 10 hours.
 
 - Implements forward propagation and back propagations for:
-  - vanilla RNN step
-  - vanilla RNN pass through entire sequence
-  - LSTM single step
   - word embedding
+  - vanilla RNN single step
+  - LSTM single step
+  - RNN/LSTM train on entire sequence
+  - RNN/LSTM inference for caption generation
 - Completed Intro to PyTorch notebook from the [Spring 2022 version of Homework 1](https://github.com/cs182sp22/cs182_hw1_student/blob/main/Pytorch.ipynb)
 - Additional resources:
   - [Math for RNNs](https://www.oreilly.com/library/view/neural-networks-and/9781492037354/ch04.html) helped understand that the previous layer gets summed, not concatenated
