@@ -31,7 +31,7 @@ Time spent: 20 hours.
 ## Homework 2
 Lectures 8-10.  
 Spring 2021 version not found, so this homework is forked from the [Spring 2022 version](https://github.com/cs182sp22/cs182_hw2_student).  
-Time spent: 10 hours.
+Time spent: 15 hours.
 
 - Implements forward propagation and back propagations for:
   - word embedding
@@ -39,6 +39,15 @@ Time spent: 10 hours.
   - LSTM single step
   - RNN/LSTM train on entire sequence
   - RNN/LSTM inference for caption generation
+- Implements neural network visualization techniques
+  - saliency maps
+  - DeepDream
+  - class visualization from random noise
+- Implements style transfer
+  - Gram matrix
+  - content loss
+  - style loss
+  - total variation loss
 - Completed Intro to PyTorch notebook from the [Spring 2022 version of Homework 1](https://github.com/cs182sp22/cs182_hw1_student/blob/main/Pytorch.ipynb)
 - Additional resources:
-  - [Math for RNNs](https://www.oreilly.com/library/view/neural-networks-and/9781492037354/ch04.html) helped understand that the previous layer gets summed, not concatenated
+  - [Math for RNNs](https://www.oreilly.com/library/view/neural-networks-and/9781492037354/ch04.html) helped understand that in the notation y = W[hidden; input] that the layers gets summed after multiplication with their respective weight matrices, not concatenated and multiplied by a single weight matrix as aluded to in lecture.
