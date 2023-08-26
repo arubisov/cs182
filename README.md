@@ -51,3 +51,7 @@ Time spent: 15 hours.
 - Completed Intro to PyTorch notebook from the [Spring 2022 version of Homework 1](https://github.com/cs182sp22/cs182_hw1_student/blob/main/Pytorch.ipynb)
 - Additional resources:
   - [Math for RNNs](https://www.oreilly.com/library/view/neural-networks-and/9781492037354/ch04.html) helped understand that in the notation y = W[hidden; input] that the layers gets summed after multiplication with their respective weight matrices, not concatenated and multiplied by a single weight matrix as aluded to in lecture.
+
+## Homework 3
+Lectures 11-13.  
+Time spent: 0 hours.
