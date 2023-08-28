@@ -54,4 +54,10 @@ Time spent: 15 hours.
 
 ## Homework 3
 Lectures 11-13.  
-Time spent: 0 hours.
+Time spent: 6 hours.
+
+- Implements LSTM-based language model in PyTorch
+  - Implements initialization, forward pass, loss, optimization
+  - Used for:
+    - evaluating sentence likelihood
+    - generating next token
