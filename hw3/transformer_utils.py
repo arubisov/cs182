@@ -1,11 +1,11 @@
 import collections
 from typing import Optional, Sequence, Any, Union, Callable
 
-import torch as th
+import torch
 from torch import nn
 import numpy as np
 
-device = th.device('cpu')
+device = torch.device('cpu')
 def get_device():
     return device
 def set_device(new_device):
@@ -53,11 +53,11 @@ class WeightNormDense(nn.Linear):
 
     def __init__(self, in_features, out_features, bias=True):
         super().__init__(in_features,out_features,bias=bias)
-        self.scale = th.ones(1, out_features, requires_grad=True, device=device)
+        self.scale = torch.ones(1, out_features, requires_grad=True, device=device)
 
     def forward(self, inputs):
         outputs = inputs.matmul(self.weight.t())
-        scale = self.scale / (th.norm(self.weight, dim=0) + 1e-8)
+        scale = self.scale / (torch.norm(self.weight, dim=0) + 1e-8)
         outputs = outputs * scale
         if self.bias is not None:
             outputs += self.bias
@@ -73,7 +73,7 @@ class EmbeddingTranspose(nn.Module):
 
     def forward(self, inputs):
         embed_mat = self.embedding.weight.detach()
-        return th.matmul(inputs, embed_mat.T)
+        return torch.matmul(inputs, embed_mat.T)
 
 class ApplyAttentionMask(nn.Module):
     """
@@ -109,7 +109,7 @@ class ApplyAttentionMask(nn.Module):
         # We know that we're passing this through a softmax later, thus just add a relatively large negative
         # value to mask the output avoids a hadamard product (though I think that technically it's not
         # any more efficient to do it this way operations wise)
-        bias = -1e9 * th.logical_not(mask).float()
+        bias = -1e9 * torch.logical_not(mask).float()
         masked_similarity = similarity + bias
         return masked_similarity
 
@@ -120,11 +120,11 @@ def convert_padding_mask_to_attention_mask(sequence, padding_mask):
     in the sequence, returns a 3D boolean mask for use in attention.
 
     Args:
-        sequence (th.Tensor): Tensor of shape [batch_size, sequence_length_1, ndim]
-        padding_mask (th.Tensor[bool]): Tensor of shape [batch_size, sequence_length_2]
+        sequence (torch.Tensor): Tensor of shape [batch_size, sequence_length_1, ndim]
+        padding_mask (torch.Tensor[bool]): Tensor of shape [batch_size, sequence_length_2]
 
     Returns:
-        th.Tensor[bool]: Tensor of shape [batch_size, sequence_length_1, sequence_length_2]
+        torch.Tensor[bool]: Tensor of shape [batch_size, sequence_length_1, sequence_length_2]
     """
     assert padding_mask.shape[0] == sequence.shape[0] and \
                                             'batch size mismatch between input sequence and  padding_mask'
@@ -141,18 +141,18 @@ def convert_sequence_length_to_sequence_mask(sequence, sequence_lengths):
     that position is padding.
 
     Args:
-        sequence (th.Tensor): Tensor of shape [batch_size, sequence_length, ndim]
-        sequence_lengths (th.Tensor[int]): Tensor of shape [batch_size]
+        sequence (torch.Tensor): Tensor of shape [batch_size, sequence_length, ndim]
+        sequence_lengths (torch.Tensor[int]): Tensor of shape [batch_size]
 
     Returns:
-        th.Tensor[bool]: Tensor of shape [batch_size, sequence_length]
+        torch.Tensor[bool]: Tensor of shape [batch_size, sequence_length]
     """
     assert sequence_lengths.shape[0] == sequence.shape[0] and \
                                         'batch size mismatch between input sequence and sequence_lengths'
     assert len(sequence_lengths.shape) == 1 and \
                                         'Can only convert 1D sequence_lengths to 2D mask'
 
-    indices = th.range(sequence.shape[1])[None, :].repeat(*(sequence_lengths.shape[0], 1))
+    indices = torch.range(sequence.shape[1])[None, :].repeat(*(sequence_lengths.shape[0], 1))
     mask = indices < sequence_lengths[:, None]
     return mask
 
@@ -165,13 +165,13 @@ def convert_to_attention_mask(sequence, mask):
     passed in is fixed.
 
     Args:
-        sequence (th.Tensor): Tensor of shape [batch_size, sequence_length, ndim]
+        sequence (torch.Tensor): Tensor of shape [batch_size, sequence_length, ndim]
         mask: Optional[Tensor] of shape [batch_size]
                                      or [batch_size, sequence_length]
                                      or [batch_size, sequence_length, sequence_length]
 
     Returns:
-        Optional[th.Tensor[bool]]: Tensor of shape [batch_size, sequence_length, sequence_length]
+        Optional[torch.Tensor[bool]]: Tensor of shape [batch_size, sequence_length, sequence_length]
     """
     if mask is None:
         return None
@@ -181,7 +181,7 @@ def convert_to_attention_mask(sequence, mask):
     if len(mask.shape) == 2:
         mask = convert_padding_mask_to_attention_mask(
             sequence, mask)
-    if mask.dtype != th.bool:
+    if mask.dtype != torch.bool:
         mask = mask.bool()
     return mask
 
