@@ -35,35 +35,34 @@ class PositionEmbedding(nn.Module):
         ####################################  YOUR CODE HERE  ####################################
         # PART 3: Implement the Position Embedding.
         # As stated in section 3.5 of the paper, attention does not naturally embed position information
-        # To incorporate that, the authors use a variable frequency sin embedding.
+        # To incorporate that, the authors use a variable frequency sinusoidal embedding.
         # Note that we use zero-indexing here while the authors use one-indexing
 
-        # assert inputs.shape[-1] == self.hidden_size and 'Input final dim must match model hidden size'
+        assert inputs.shape[-1] == self.hidden_size and 'Input final dim must match model hidden size'
 
-        # batch_size = inputs.shape[0]
-        # sequence_length = inputs.shape[1]
+        batch_size, sequence_length, d_model = inputs.shape
 
-        # # obtain a sequence that starts at `start` and increments for `sequence_length `
-        # seq_pos = torch.arange(start, sequence_length + start, dtype=torch.float32)
-        # seq_pos_expanded = seq_pos[None,:,None]
-        # index = seq_pos_expanded.repeat(*[1,1,self.hidden_size//2])
+        # obtain a sequence that starts at `start` and increments for `sequence_length`
+        seq_pos = torch.arange(start, sequence_length + start, dtype=torch.float32)   # 1-D
+        seq_pos_expanded = seq_pos[None,:,None]                                       # dim (1, len, 1)
+        index = seq_pos_expanded.repeat(*[1,1,self.hidden_size//2])                   # dim (1, len, h/2) repeat val
 
-        # # create the position embedding as described in the paper
-        # # use the `divisor` attribute instantiated in __init__ 
-        # sin_embedding = 
-        # cos_embedding = 
+        # create the position embedding as described in the paper
+        sin_embedding = torch.sin(index / self.divisor)
+        cos_embedding = torch.cos(index / self.divisor)
 
-        # # interleave the sin and cos. For more info see:
-        # # https://discuss.pytorch.org/t/how-to-interleave-two-tensors-along-certain-dimension/11332/3
-        # position_shape = (1, , ) # fill in the other two dimensions
-        # position_embedding = torch.stack((sin_embedding,cos_embedding), dim=3).view(position_shape)
+        # interleave the sin and cos. For more info see:
+        # https://discuss.pytorch.org/t/how-to-interleave-two-tensors-along-certain-dimension/11332/3
+        position_shape = (1, sequence_length, d_model) # fill in the other two dimensions
+        position_embedding = torch.stack((sin_embedding,cos_embedding), dim=3).view(position_shape)
 
-        # pos_embed_deviced = position_embedding.to(get_device())
+        pos_embed_deviced = position_embedding.to(get_device())
         
         # add the embedding to the input
+        output = inputs + pos_embed_deviced
         ####################################  END OF YOUR CODE  ##################################
 
-        return 
+        return output
 
 class TransformerFeedForward(nn.Module):
     def __init__(self, input_size,
