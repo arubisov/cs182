@@ -85,23 +85,23 @@ class TransformerFeedForward(nn.Module):
     def forward(self, inputs):
         ####################################  YOUR CODE HERE  ####################################
         # PART 4.1: Implement the FeedForward Layer.
-        # As seen in fig1, the feedforward layer includes a normalization and residual
-        # norm_input = 
-        # dense_out = 
-        # dense_drop =  # Add the dropout here
+        #
+        # Anton: In the paper, output of each sub-layer is LayerNorm(x+Sublayer(x)). 
+        # e.g. output of feedforward is LayerNorm(x + FeedForward(x))        
+        # Here we implement LayerNorm(x) + Dropout(FeedForward(x))
+        # which isn't correct.
+        
+        norm_input = self.norm(inputs)
+        dense_out = self.feed_forward(norm_input)
+        dense_drop =  self.dropout(dense_out)
         
         # Add the residual here
-        output = None
+        output = inputs + dense_drop
         ####################################  END OF YOUR CODE  ##################################
         return output
 
 class TransformerEncoderBlock(nn.Module):
-    """An encoding block from the paper Attention Is All You Need (https://arxiv.org/pdf/1706.03762.pdf).
-
-    :param inputs: Tensor with shape [batch_size, sequence_length, channels]
-
-    :return: output: Tensor with same shape as input
-    """
+    """An encoding block from the paper Attention Is All You Need."""
 
     def __init__(self,
                  input_size,
@@ -111,84 +111,98 @@ class TransformerEncoderBlock(nn.Module):
                  dropout = None) -> None:
         super().__init__()
         self.norm = nn.LayerNorm(input_size)
-        self.self_attention = MultiHeadAttention(n_heads,[input_size,input_size])
+        self.self_attention = MultiHeadAttention(n_heads, [input_size, input_size])
         self.feed_forward = TransformerFeedForward(input_size, filter_size, hidden_size, dropout)
 
-    def forward(self, inputs, self_attention_mask=None):
+    def forward(self, input, self_attention_mask=None):
+        """Forward call of the encoder block.
+        
+        Args:
+            input: Tensor with shape [batch_size, sequence_length, d_model]
+
+        Returns:
+            output: Tensor with same shape as input
+        """
 
         ####################################  YOUR CODE HERE  ####################################
         # PART 4.2: Implement the Transformer Encoder according to section 3.1 of the paper.
         # Perform a multi-headed self-attention across the inputs.
+        
+        # Anton: again this isn't quite right, LayerNorm used incorrectly.
 
-        # # First normalize the input with the LayerNorm initialized in the __init__ function (self.norm)
-        # norm_inputs = 
+        # First normalize the input with the LayerNorm initialized in the __init__ function (self.norm)
+        norm_inputs = self.norm(input)
 
-        # # Apply the self-attention with the normalized input, use the self_attention mask as the optional mask parameter.
-        # attn = 
+        # Apply the self-attention with the normalized input, use the self_attention mask as the optional mask parameter.
+        attn = self.self_attention((norm_inputs, norm_inputs), self_attention_mask)
 
-        # # Apply the residual connection. res_attn should sum the attention output and the original, non-normalized inputs
-        # res_attn =  # Residual connection of the attention block
+        # Apply the residual connection. res_attn should sum the attention output and the original, non-normalized inputs
+        res_attn = input + attn
 
         # output passes through a feed_forward network
-        output = None
+        output = self.feed_forward(res_attn)
+        ####################################  END OF YOUR CODE  ##################################
+        
         return output
 
 
 class TransformerDecoderBlock(nn.Module):
-    """A decoding block from the paper Attention Is All You Need (https://arxiv.org/pdf/1706.03762.pdf).
-
-    :param inputs: two Tensors encoder_outputs, decoder_inputs
-                    encoder_outputs -> a Tensor with shape [batch_size, sequence_length, channels]
-                    decoder_inputs -> a Tensor with shape [batch_size, decoding_sequence_length, channels]
-
-    :return: output: Tensor with same shape as decoder_inputs
-    """
+    """A decoding block from the paper Attention Is All You Need."""
 
     def __init__(self,
                  input_size,
                  n_heads,
                  filter_size,
                  hidden_size,
-                 dropout = None) -> None:
+                 dropout=None) -> None:
         super().__init__()
+        
         self.self_norm = nn.LayerNorm(input_size)
-        self.self_attention = MultiHeadAttention(n_heads,[input_size,input_size])
-
-        self.cross_attention = MultiHeadAttention(n_heads,[input_size,input_size])
-        self.cross_norm_source = nn.LayerNorm(input_size)
-        self.cross_norm_target = nn.LayerNorm(input_size)
+        self.self_attention = MultiHeadAttention(n_heads, [input_size, input_size])
+        self.cross_attention = MultiHeadAttention(n_heads, [input_size, input_size])
+        self.cross_norm_encoder = nn.LayerNorm(input_size)
+        self.cross_norm_decoder = nn.LayerNorm(input_size)
         self.feed_forward = TransformerFeedForward(input_size, filter_size, hidden_size, dropout)
 
-    def forward(self, decoder_inputs, encoder_outputs, self_attention_mask=None, cross_attention_mask=None):    
+    def forward(self, decoder_input, encoder_output, self_attention_mask=None, cross_attention_mask=None):
+        """Forward call of the decoder block.
+
+        Args:
+            decoder_input: a Tensor with shape [batch_size, decoding_sequence_length, channels]
+            encoder_output: a Tensor with shape [batch_size, sequence_length, channels]
+
+        Returns:
+            output: Tensor with same shape as decoder_inputs
+        """
+        
         # The cross-attention mask should have shape [batch_size x target_len x input_len]
 
         ####################################  YOUR CODE HERE  ####################################
         # PART 4.2: Implement the Transformer Decoder according to section 3.1 of the paper.
-        # The cross-attention mask should have shape [batch_size x target_len x input_len]
 
-        # Compute the selt-attention over the decoder inputs. This uses the self-attention
-        # mask to control for the future outputs.
-        # This generates a tensor of size [batch_size x target_len x d_model]
+        # layer norm to input of block. 
+        norm_decoder_input = self.self_norm(decoder_input)
 
-        # norm_decoder_inputs = 
+        # masked self-attention over decoder input
+        # output shape [B, decoder_len, d_model]
+        decoder_self_attn = self.self_attention((norm_decoder_input, norm_decoder_input), self_attention_mask)
+        # residual connection
+        res_decoder_self_attn = decoder_self_attn + decoder_input
 
-        # target_selfattn = 
-        # res_target_self_attn = 
+        # apply respective LayerNorms
+        norm_decoder_self_attn = self.cross_norm_decoder(res_decoder_self_attn)
+        norm_encoder_output = self.cross_norm_encoder(encoder_output)
 
-        # # Compute the attention using the keys/values from the encoder, and the query from the
-        # # decoder. This takes the encoder output of size [batch_size x source_len x d_model] and the
-        # # target self-attention layer of size [batch_size x target_len x d_model] and then computes
-        # # a multi-headed attention across them, giving an output of [batch_size x target_len x d_model]
-        # # using the encoder as the keys and values and the target as the queries
+        # compute the attention using the k/v from encoder, and q from decoder. 
+        cross_attention = self.cross_attention((norm_decoder_self_attn, norm_encoder_output), cross_attention_mask)
+        
+        # add residual unnormalized decoder input to output of cross-attention
+        res_cross_attention = cross_attention + res_decoder_self_attn
 
-        # norm_target_selfattn = 
-        # norm_encoder_outputs = 
-        # encdec_attention = 
-        # # Take the residual between the output and the unnormalized target input of the cross-attention
-        # res_encdec_attention = 
-
-        output = None
-
+        # pass through feedforward
+        output = self.feed_forward(res_cross_attention)
+        ####################################  END OF YOUR CODE  ##################################
+        
         return output
 
 class TransformerEncoder(nn.Module):
@@ -205,7 +219,7 @@ class TransformerEncoder(nn.Module):
         self.encoding_stack = []
         for i in range(n_layers):
             encoder = TransformerEncoderBlock(embed_size, n_heads, d_filter, d_model, dropout)
-            setattr(self, f"encoder{i}",encoder)
+            setattr(self, f"encoder{i}", encoder)
             self.encoding_stack.append(encoder)
 
     def forward(self, inputs, encoder_mask=None):
@@ -249,42 +263,44 @@ class TransformerDecoder(nn.Module):
             self.decoding_stack.append(decoder)
         self.output_layer = output_layer
 
-    # Self attention mask is a upper triangular mask to prevent attending to future targets + a padding mask
-    # attention mask is just the padding mask
+
     def forward(self, target_input, encoder_output, encoder_mask=None, decoder_mask=None, mask_future=False,
         shift_target_sequence_right=False):
         """
-            Args:
-                inputs: a tuple of (encoder_output, target_embedding)
-                    encoder_output: a float32 Tensor with shape [batch_size, sequence_length, d_model]
-                    target_input: either a int32 or float32 Tensor with shape [batch_size, target_length, ndims]
-                    cache: Used for fast decoding, a dictionary of tf.TensorArray. None during training.
-                mask_future: a boolean for whether to mask future states in target self attention
+        Args:
+            target_input: either a int32 or float32 Tensor with shape [batch_size, target_length, ndims]
+            encoder_output: a float32 Tensor with shape [batch_size, sequence_length, d_model]
+            encoder_mask: ???
+            decoder_mask: ???
+            mask_future: a boolean for whether to perform masked self-attention
+            shift_target_sequence_right: ???
 
-            Returns:
-                a tuple of (encoder_output, output)
-                    output: a Tensor with shape [batch_size, sequence_length, d_model]
+        Returns:
+            output: a Tensor with shape [batch_size, sequence_length, d_model]
         """
         if shift_target_sequence_right:
             target_input = self.shift_target_sequence_right(target_input)
 
         target_embedding = self.embedding_layer(target_input)
 
-        # Build the future-mask if necessary. This is an upper-triangular mask
-        # which is used to prevent the network from attending to later timesteps
-        # in the target embedding
+        # Build the self-attention mask.
+        # if mask_future=False, then this is just a padding mask
+        # if mask_future=True, then this is a padding mask + upper triangular mask to prevent attending to future targets
         batch_size = target_embedding.shape[0]
         sequence_length = target_embedding.shape[1]
         self_attention_mask = self.get_self_attention_mask(batch_size, sequence_length, decoder_mask, mask_future)
+        
         # Build the cross-attention mask. This is an upper-left block matrix which takes care of the masking
         # of the output shapes
-        cross_attention_mask = self.get_cross_attention_mask(
-            encoder_output, target_input, encoder_mask, decoder_mask)
+        cross_attention_mask = self.get_cross_attention_mask(encoder_output, target_input, encoder_mask, decoder_mask)
 
         # Now actually do the decoding which should take us to the right dimension
         decoder_output = target_embedding
         for decoder in self.decoding_stack:
-            decoder_output = decoder(decoder_output, encoder_outputs=encoder_output, self_attention_mask=self_attention_mask, cross_attention_mask=cross_attention_mask)
+            decoder_output = decoder(decoder_output, 
+                                     encoder_output=encoder_output, 
+                                     self_attention_mask=self_attention_mask, 
+                                     cross_attention_mask=cross_attention_mask)
 
         # Use the output layer for the final output. For example, this will map to the vocabulary
         output = self.output_layer(decoder_output)
@@ -427,15 +443,23 @@ class Transformer(nn.Module):
         # PART 5: Implement the full Transformer block
 
         # Using the self.encoder, encode the source_sequence, and provide the encoder_mask variable as the optional mask.
-        # encoder_output = 
+        encoder_output = self.encoder(source_sequence, encoder_mask)
 
         # Finally, we need to do a decoding this should generate a
         # tensor of shape [batch_size x target_length x d_model]
         # from the encoder output.
+        
         # Using the self.decoder, provide it with the decoder input, and the encoder_output. 
+        
         # As usual, provide it with the encoder and decoder_masks
         # Finally, You should also pass it these two optional arguments:
         # shift_target_sequence_right=shift_target_sequence_right, mask_future=mask_future
-        decoder_output = None
+        decoder_output = self.decoder(target_input=target_sequence,
+                                      encoder_output=encoder_output,
+                                      encoder_mask=encoder_mask,
+                                      decoder_mask=decoder_mask,
+                                      mask_future=mask_future,
+                                      shift_target_sequence_right=shift_target_sequence_right)
+        ####################################  END OF YOUR CODE  ##################################
 
-        return decoder_output # We return the decoder's output
+        return decoder_output
