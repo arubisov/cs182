@@ -54,10 +54,20 @@ Time spent: 15 hours.
 
 ## Homework 3
 Lectures 11-13.  
-Time spent: 6 hours.
+Time spent: 10 hours.
 
 - Implements LSTM-based language model in PyTorch
   - Implements initialization, forward pass, loss, optimization
   - Used for:
     - evaluating sentence likelihood
     - generating next token
+- Implements a Transformer language model in PyTorch
+  - Implements each element of the [Attention Is All You Need](https://arxiv.org/pdf/1706.03762.pdf) paper
+  - Used for:
+    - article summarization
+    - inspecting word relationships in the embedding space
+- Additional resources:
+  - A TON of PyTorch documentation.
+  - Andrej Karpathy's [Recipe for Training Neural Networks](http://karpathy.github.io/2019/04/25/recipe/) based on common mistakes
+  - Why my [loss was decreasing to nan](https://discuss.pytorch.org/t/nan-loss-coming-after-some-time/11568)
+  - 
